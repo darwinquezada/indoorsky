@@ -1,0 +1,21 @@
+# docker-compose.yml
+version: '3.8'
+
+volumes:
+  userdb_vol:
+
+networks:
+  micro_network:
+    external:
+      name: micro_network
+
+services:
+  auth-api:
+    container_name: cont-postech-mservice
+    build:
+      context: .
+    ports:
+    - "5008:5000"
+    networks:
+      - micro_network
+    restart: always

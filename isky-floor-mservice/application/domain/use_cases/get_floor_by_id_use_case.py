@@ -1,0 +1,10 @@
+from application.domain.repository.floor_repository import FloorRepository
+from dependency_injector.wiring import inject
+
+class GetFloorByIdUseCase:
+    @inject
+    def __init__(self, floor_repository: FloorRepository) -> None:
+        self.floor_repository = floor_repository
+        
+    def execute(self, floor_id: str) -> dict:
+        return self.floor_repository.get_floor_by_id(floor_id=floor_id)

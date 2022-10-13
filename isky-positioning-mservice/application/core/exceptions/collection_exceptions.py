@@ -1,0 +1,2 @@
+class CollectionException(Exception):
+    pass
