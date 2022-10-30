@@ -6,8 +6,8 @@ volumes:
 
 networks:
   micro_network:
-    external:
-      name: micro_network
+    name: kong-isky-net
+    external: true
 
 services:
   auth-api:

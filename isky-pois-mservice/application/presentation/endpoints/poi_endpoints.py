@@ -30,8 +30,9 @@ r = RethinkDB()
 @api_poi.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
         abort(503, "No database g.rdb_connection could be established.")
 
@@ -43,7 +44,7 @@ def teardown_request(exception):
         pass
 
 @api_poi.post('/poi', tags=[poi_tag])
-# @login_required
+@login_required
 def insert_poi(body: PoiEntity):
         insert_environment_use_case = InsertPoiUseCase(poi_repository=ApplicationContainer.poi_repository())
         data = {
@@ -63,26 +64,25 @@ def insert_poi(body: PoiEntity):
         return insert_environment_use_case.execute(data)
 
 @api_poi.get('/poi/<poi_id>', tags=[poi_tag])
-# @login_required
+@login_required
 def get_poi_by_id(path: PoiIdBody):
         get_poi_by_id_use_case = GetPoiByIdUseCase(poi_repository=ApplicationContainer.poi_repository())
         return get_poi_by_id_use_case.execute(poi_id=path.poi_id)
 
 @api_poi.get('/poi/<name>/name', tags=[poi_tag])
-# @login_required
+@login_required
 def get_poi_by_name(path: PoiNameBody):
         get_poi_by_name_use_case = GetPoiByNameUseCase(poi_repository=ApplicationContainer.poi_repository())
         return get_poi_by_name_use_case.execute(name=path.name)
 
 @api_poi.delete('/poi/<poi_id>/delete', tags=[poi_tag])
-# @login_required
+@login_required
 def delete_poi_by_id(path: PoiIdBody):
         delete_use_case = DeletePoiUseCase(poi_repository=ApplicationContainer.poi_repository())
         return delete_use_case.execute(poi_id=path.poi_id)
 
-
 @api_poi.put('/poi/<poi_id>/update', tags=[poi_tag])
-# @login_required
+@login_required
 def update_poi(path:PoiIdBody, body:PoiEntity):
         update_poi_use_case = UpdatePoiUseCase(poi_repository=ApplicationContainer.poi_repository())
         return update_poi_use_case.execute(poi_id=path.poi_id, floor_id=body.floor_id, name=body.name, 

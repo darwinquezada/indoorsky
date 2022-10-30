@@ -5,7 +5,7 @@ from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 from flask import g, abort
 
 from . import preprocessing_tag, api_preprocessing
-# from application.core.decorators.jwt_manager import login_required
+from application.core.decorators.jwt_manager import login_required
 from application.domain.entity.preprocessing_entity import PreprocessingEntity
 from application.presentation.data_injection.injection_container import ApplicationContainer
 
@@ -27,10 +27,11 @@ r = RethinkDB()
 @api_preprocessing.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
-        abort(503, "No database g.rdb_connection could be established.")
+        abort(503, "No database connection could be established.")
 
 @api_preprocessing.teardown_request
 def teardown_request(exception):

@@ -17,11 +17,13 @@ class MetricEnum(str, Enum):
     manhattan= 'manhattan'
     euclidean= 'euclidean'
     
-class TestEntity(BaseModel):
+class TestCnnLstmEntity(BaseModel):
     test_accuracy: bool = False
+    percent_validation: int
     percent_test: int
 
 class GeneralModelEntity(BaseModel):
+    train: bool
     lr: float
     epochs: int
     batch_size: int
@@ -34,5 +36,5 @@ class CnnLstmEntity(BaseModel):
     floor: GeneralModelEntity
     building: GeneralModelEntity
     position: GeneralModelEntity
-    test : TestEntity
+    test : TestCnnLstmEntity
     is_active: bool

@@ -3,6 +3,7 @@ from knn_positioning import Position_KNN
 from data_partition import data_partition
 from elm import elmTrain_fix, elmPredict_optim
 from cnn import convlayer
+from sklearn.metrics import confusion_matrix
 from appwrite.exception import AppwriteException
 from appwrite.client import Client
 from appwrite.services.databases import Databases
@@ -247,47 +248,52 @@ if __name__ == '__main__':
                                                                                       test_data_percent=params['test']['percent_test'])
         
         # Data reshape
-        x_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+        X_train = X_new_train.values.reshape((X_new_train.shape[0], X_new_train.shape[1], 1))
         X_test = X_new_validation.values.reshape((X_new_validation.shape[0], X_new_validation.shape[1], 1))
         
         # Training Models
         # General
-        x_train = x_train.astype('float32')
-        x_test = x_test.astype('float32')
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
 
-        intrain = K.variable(x_train)
-        intest = K.variable(x_test)
+        intrain = K.variable(X_train)
+        intest = K.variable(X_test)
+        
+        # One hot encoder
+        one_hotencoder_floor = file['floor_one_hot_encoder_file']
+        y_train_floor_oe = one_hotencoder_floor.transform(y_new_train['FLOOR'].values.reshape(-1, 1))
 
+        encoder_bld = file['building_one_hot_encoder_file']
+        y_train_bld_oe = encoder_bld.fit_transform(y_new_train['BUILDINGID'].values.reshape(-1, 1))
+        
         # CNN Model
-        t1 = ti.time()
-        out_train_ = convlayer(intrain, cnn_config=cnn_config)
-        out_test_ = convlayer(intest, cnn_config=cnn_config)
+        out_train_ = convlayer(intrain, cnn_config=params['cnn'])
+        out_test_ = convlayer(intest, cnn_config=params['cnn'])
 
         # Effective computation of the input preprocessing flow
 
         out_train = K.eval(out_train_)
         out_test = K.eval(out_test_)
-        ttrain_cnn = ti.time()-t1
         K.clear_session()  # to avoid overloads
 
         # ELM
         Samples = out_train.T
         Labels_floor = y_train_floor_oe
-        Labels_bld = y_train_build_oe
+        Labels_bld = y_train_bld_oe
 
         # ELM - training
-        t1 = ti.time()
-        inW, outW, h_train = elmTrain_fix(Samples, np.transpose(Labels_floor), elm_config["hidden_neurons"],
-                                        elm_config["C"], elm_config["act_funct"], elm_config["win_bits"])
+        inW, outW, h_train = elmTrain_fix(Samples, np.transpose(Labels_floor), params['elm']["hidden_neurons"],
+                                          params['elm']["c"], params['elm']["act_funct"], 
+                                          params['elm']["weight_initializatio_bits"])
 
-        inW_bld, outW_bld, h_train_bld = elmTrain_fix(Samples, np.transpose(Labels_bld), elm_config["hidden_neurons"],
-                                        elm_config["C"], elm_config["act_funct"], elm_config["win_bits"])
-        ttrain = ti.time() - t1 + ttrain_cnn
+        inW_bld, outW_bld, h_train_bld = elmTrain_fix(Samples, np.transpose(Labels_bld), 
+                                                      params['elm']["hidden_neurons"],
+                                                      params['elm']["c"], params['elm']["act_funct"], 
+                                                      params['elm']["weight_initializatio_bits"])
 
-        print(" training time: %f seconds" % ttrain)
         # ==============  Quantify the output layer ======================================
-        Qout = -1 + pow(2, elm_config["wout_bits"] - 1)
-        if elm_config["wout_bits"] > 0:
+        Qout = -1 + pow(2, params['elm']["output_weits_bits"] - 1)
+        if params['elm']["output_weits_bits"] > 0:
             O = np.max(np.abs(outW))
             outW = np.round(outW * (1 / O) * Qout)
 
@@ -299,43 +305,53 @@ if __name__ == '__main__':
         SamplesTest = out_test.T
 
         # ====================== VALIDATION PHASE (+ Accuracy evaluation) =================
-        t2 = ti.time()
-        scores, h_test = elmPredict_optim(SamplesTest, inW, outW, elm_config["act_funct"])
-        scores_bld, h_test_bld = elmPredict_optim(SamplesTest, inW_bld, outW_bld, elm_config["act_funct"])
+        scores, h_test = elmPredict_optim(SamplesTest, inW, outW, params['elm']["act_funct"])
+        scores_bld, h_test_bld = elmPredict_optim(SamplesTest, inW_bld, outW_bld, params['elm']["act_funct"])
 
-        ttest = ti.time() - t2
-        print(" prediction time: %f seconds" % ttest)
+        # Saving floor weights
+        floor_input_weights_file = os.path.join(temp_path, uuid_file + '_FLOOR_INPUT_WEIGHTS' + '.save')
+        joblib.dump(inW, floor_input_weights_file)
+        insert_data(collection_id=data_model, id=uuid_file, 
+                    parameter='floor_input_weights_file', value='', 
+                    path_file=floor_input_weights_file)
+        os.remove(floor_input_weights_file)
+        
+        floor_output_weights_file = os.path.join(temp_path, uuid_file + '_FLOOR_OUTPUT_WEIGHTS' + '.save')
+        joblib.dump(outW, floor_output_weights_file)
+        insert_data(collection_id=data_model, id=uuid_file, 
+                    parameter='floor_output_weights_file', value='', 
+                    path_file=floor_output_weights_file)
+        os.remove(floor_output_weights_file)
+        
+        # Saving building weights
+        building_input_weights_file = os.path.join(temp_path, uuid_file + '_BUILDING_INPUT_WEIGHTS' + '.save')
+        joblib.dump(inW_bld, building_input_weights_file)
+        insert_data(collection_id=data_model, id=uuid_file, 
+                    parameter='building_input_weights_file', value='', 
+                    path_file=building_input_weights_file)
+        os.remove(building_input_weights_file)
+        
+        building_output_weights_file = os.path.join(temp_path, uuid_file + '_BUILDING_OUTPUT_WEIGHTS' + '.save')
+        joblib.dump(outW_bld, building_output_weights_file)
+        insert_data(collection_id=data_model, id=uuid_file, 
+                    parameter='building_output_weights_file', value='', 
+                    path_file=building_output_weights_file)
+        os.remove(building_output_weights_file)
 
         # Floor prediction
         round_predictions = np.argmax(np.transpose(scores), axis=-1)
-        cm = confusion_matrix(y_true=y_test_floor, y_pred=round_predictions)
+        cm = confusion_matrix(y_true=y_new_validation['FLOOR'], y_pred=round_predictions)
         accuracy = (np.trace(cm) / float(np.sum(cm))) * 100
+        
+        insert_data(collection_id=data_model, id=uuid_file, 
+                parameter='result.floor_hit_rate', value=str(round(accuracy, 2)), 
+                path_file='')
 
         # Building
         round_predictions_bld = np.argmax(np.transpose(scores_bld), axis=-1)
-        cm_bld = confusion_matrix(y_true=y_test_bld, y_pred=round_predictions_bld)
+        cm_bld = confusion_matrix(y_true=y_new_validation['BUILDINGID'], y_pred=round_predictions_bld)
         accuracy_bld = (np.trace(cm_bld) / float(np.sum(cm_bld))) * 100
-
-        labels = np.unique(y_train_floor)
-        
-        position = Position_KNN(k=params['test']['k'], metric=params['test']['distance_metric'])
-        position.fit(X_new_train, y_new_train.values)
-        floor_hit_rate_org, true_false_values_org, pred_fhr_org = position.floor_hit_rate(X_new_validation, y_new_validation.values)
-        building_hit_rate_org, pred_bhr_org = position.building_hit_rate(X_new_validation, y_new_validation.values)
-        error2D_org, error2D_values_org = position.predict_position_2D(X_new_validation, y_new_validation.values, true_floors=true_false_values_org)
-        error3D_org, error3D_values_org = position.predict_position_3D(X_new_validation, y_new_validation.values)
         
         insert_data(collection_id=data_model, id=uuid_file, 
-                    parameter='result.mean_3d_error', value=str(round(error3D_org, 2)), 
-                    path_file='')
-        insert_data(collection_id=data_model, id=uuid_file, 
-                    parameter='result.mean_2d_error', value=str(round(error2D_org, 2)), 
-                    path_file='')
-        insert_data(collection_id=data_model, id=uuid_file, 
-                    parameter='result.building_hit_rate', value=str(round(building_hit_rate_org, 2)), 
-                    path_file='')
-        insert_data(collection_id=data_model, id=uuid_file, 
-                    parameter='result.floor_hit_rate', value=str(round(floor_hit_rate_org, 2)), 
-                    path_file='')
-        
-        
+                parameter='result.building_hit_rate', value=str(round(accuracy_bld, 2)), 
+                path_file='')

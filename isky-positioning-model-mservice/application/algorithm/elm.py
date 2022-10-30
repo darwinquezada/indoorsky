@@ -4,7 +4,7 @@ import numpy as np
 import random
 from numpy.random import seed, default_rng
 
-from miscellaneous.misc import Misc
+from misc import Misc
 '''
 #  ELM MODULE
 #================================================================================

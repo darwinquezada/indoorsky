@@ -6,6 +6,9 @@ class FloorModel(AuditEntity):
         pass
     
     def to_json(self, audit_entity: AuditEntity) -> dict:
+        """
+        Model to json
+        """
         jsonData = {
             'user_id': audit_entity.user_id,
             'local_ip': audit_entity.local_ip,
@@ -16,5 +19,8 @@ class FloorModel(AuditEntity):
         return jsonData
 
     def to_object(self, audit: str) -> AuditEntity:
+        """
+        Json to object
+        """
         data_object = json.loads(audit, object_hook=AuditEntity)
         return data_object

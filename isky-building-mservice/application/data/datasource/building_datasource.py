@@ -4,14 +4,6 @@ import json
 class IBuildingDatasource(ABC):
     
     @abstractmethod
-    def verify_db(self) -> dict:
-        pass
-    
-    @abstractmethod
-    def verify_table(self) -> dict:
-        pass
-    
-    @abstractmethod
     def insert_building(self, data: json) -> dict:
         pass
     

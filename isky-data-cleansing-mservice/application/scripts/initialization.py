@@ -3,6 +3,7 @@ from importlib.resources import path
 import os
 import json
 import uuid
+from time import sleep
 from appwrite.exception import AppwriteException
 from appwrite.client import Client
 from appwrite.services.databases import Databases
@@ -10,8 +11,8 @@ from appwrite.input_file import InputFile
 from appwrite.services.storage import Storage
 from appwrite.input_file import InputFile
 
-from rethinkdb import RethinkDB
-from rethinkdb.errors import RqlRuntimeError, RqlDriverError
+# from rethinkdb import RethinkDB
+# from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 from dotenv import load_dotenv
 
 ### Warning ###
@@ -25,7 +26,7 @@ dotenv_path = os.path.join(os.getcwd(), '.env')
 if os.path.exists(dotenv_path):
    load_dotenv(dotenv_path)
 
-r = RethinkDB()
+# r = RethinkDB()
 
 client = Client()
 client.set_endpoint(os.environ['APPWRITEENDPOINT'])
@@ -40,24 +41,24 @@ dataset_id = os.environ['TABLE_DATASET']
 data_cleansing_id = os.environ['TABLE_CLEANSING']
 
 
-def connection():
-    # Database connection RethinkDB
-    try:
-        conn = r.connect(host=os.environ['RDB_HOST'],  port=os.environ['RDB_PORT'])
-        return conn
-    except RqlRuntimeError as e:
-        return jsonify({'code': '0', 'message': e.message})
+# def connection():
+#     # Database connection RethinkDB
+#     try:
+#         conn = r.connect(host=os.environ['RDB_HOST'],  port=os.environ['RDB_PORT'])
+#         return conn
+#     except RqlRuntimeError as e:
+#         return jsonify({'code': '0', 'message': e.message})
 
-def verify_rethinkdb():
-    try:
-        conn = connection()
-        list_databases = r.db_list().run(conn)
-            
-        if not database_id in list_databases:
-            r.db_create(database_id).run(conn)
-            pass
-    except RqlRuntimeError as e:
-        return jsonify({'code': '0', 'message': e.message})
+# def verify_rethinkdb():
+#     try:
+#         conn = connection()
+#         list_databases = r.db_list().run(conn)
+#             
+#         if not database_id in list_databases:
+#             r.db_create(database_id).run(conn)
+#             pass
+#     except RqlRuntimeError as e:
+#         return jsonify({'code': '0', 'message': e.message})
  
 def is_database_available():
     try:
@@ -117,6 +118,15 @@ def create_collection_data_preprocesing():
             size=40,
             required=False,
         )
+        # Type
+        response = databases.create_string_attribute(
+            database_id=database_id,
+            collection_id=config_preproc_id,
+            key="type",
+            size=40,
+            required=False,
+        )
+        sleep(2)
         response = databases.create_index(
             database_id=database_id,
             collection_id=config_preproc_id,
@@ -174,6 +184,7 @@ def create_collection_data_cleansing():
             size=100,
             required=True,
         )
+        sleep(2)
         response = databases.create_index(
             database_id=database_id,
             collection_id=data_cleansing_id,
@@ -312,7 +323,7 @@ if __name__ == '__main__':
         os.makedirs(temp_path)
     
     # Verify RethinkDB dataset
-    verify_rethinkdb()
+    # verify_rethinkdb()
     
     # Verify if the database exist
     is_db_available = is_database_available()

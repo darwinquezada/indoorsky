@@ -3,8 +3,8 @@ from werkzeug.exceptions import HTTPException
 
 
 class BaseAPICode(HTTPException):
-    code = 200
     error_code = -1
+    code = 200
     message = 'exception'
 
     def __init__(self, code=None, message=None, error_code=None, headers=None):
@@ -22,10 +22,16 @@ class BaseAPICode(HTTPException):
         super(BaseAPICode, self).__init__(message, None)
 
     def get_body(self, *args, **kwargs):
-        body = {
-            "code": self.error_code,
-            "message": self.message,
-        }
+        if self.error_code == -1:
+            body = {
+                "code": self.code,
+                "message": self.message,
+            }
+        else:
+            body = {
+                "error_code": self.error_code,
+                "message": self.message,
+            }
         text = json.dumps(body, ensure_ascii=False)
         return text
 

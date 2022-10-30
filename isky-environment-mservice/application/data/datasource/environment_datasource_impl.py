@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 from application.data.datasource.environment_datasource import IEnvironmentDatasource
+from application.core.exceptions.status_codes import (SuccessResponseCode, NotFoundResponseCode, 
+                                                      InternalServerErrorResponseCode, ConflictResponseCode)
 from flask import jsonify, abort, g
 
 r = RethinkDB()
@@ -15,38 +17,8 @@ class EnvironmentDatasourceImpl(IEnvironmentDatasource):
         self.database_name = database_name
         self.table_name = table_name
     
-    def verify_db(self) -> dict:
-        try:
-            list_databases = r.db_list().run(g.rdb_conn)
-            
-            if not self.database_name in list_databases:
-                r.db_create(self.database_name).run(g.rdb_conn)
-                r.db(self.database_name).table_create(self.table_name).run(g.rdb_conn)
-                pass
-        except RqlRuntimeError as e:
-            return jsonify({'code': '0', 'message': e.message})
-
-    def verify_table(self) -> dict:
-        try:
-            list_tables = r.db(self.database_name).table_list().run(g.rdb_conn)
-            if not self.table_name in list_tables:
-                r.db(self.database_name).table_create(self.table_name).run(g.rdb_conn)
-            
-            list_indexes = r.db(self.database_name).table(self.table_name).index_list().run(g.rdb_conn)
-            
-            if not list_indexes :
-                r.db(self.database_name).table(self.table_name).index_create("name").run(g.rdb_conn)
-                r.db(self.database_name).table(self.table_name).index_wait("name").run(g.rdb_conn)
-
-                pass
-        except RqlRuntimeError as e:
-            return jsonify({'code': '0', 'message': e.message})
-
-    
     def create_environment(self, data: json) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
             
             filter_predicate = {
                 "name": data['name']
@@ -56,21 +28,19 @@ class EnvironmentDatasourceImpl(IEnvironmentDatasource):
             
             if reg_exist == True:
                 insert = r.db(self.database_name).table(self.table_name).insert(data).run(g.rdb_conn)
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
             else:
-                return jsonify({'code':409, 'message':'Oops ... you\'re trying to create an already existing record.'})
+                return ConflictResponseCode(message="There is a register with the same name.")
             
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)
     
     def get_environments(self) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
             environments = r.db(self.database_name).table(self.table_name).run(g.rdb_conn)
             
             if environments=='null':
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode(message="Environments not found.")
             
             list_environments = []
             
@@ -78,65 +48,55 @@ class EnvironmentDatasourceImpl(IEnvironmentDatasource):
                 list_environments.append(environment)
             
             if not list_environments:
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode()
             
             return jsonify(list_environments)
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e})
+            return InternalServerErrorResponseCode(message=e.message)
         
     def get_environment_by_id(self, env_id: str) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
             environment = r.db(self.database_name).table(self.table_name).get(env_id).to_json().run(g.rdb_conn)
             
             if environment=='null':
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode(message="Environment ID not found.")
             
             return json.loads(environment)
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e})
+            return InternalServerErrorResponseCode(message=e.message)
         
     def get_environment_by_name(self, name: str) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
-            
             environments = r.db(self.database_name).table(self.table_name).filter({"name": name}).run(g.rdb_conn)
             if environments=='null':
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode(message="Name not found.")
             
             list_environments = []
             for environment in environments:
                 list_environments.append(environment)
                 
             if not list_environments:
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode()
             
             return jsonify(list_environments)
         except RuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)
             
     
     def delete_environment(self, env_id: str) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
-            
             environment = r.db(self.database_name).table(self.table_name).get(env_id).delete().run(g.rdb_conn)
             if environment['deleted'] == 0:
-                return jsonify({'code':400, 'message':'The id is invalid. This can happen if the item represented by the id has been deleted.'})
+                return NotFoundResponseCode(message="Environment ID not found.")
             else:    
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)
     
     def update_environment(self, env_id: str, name: str, address: str, 
                            num_buildings: int, is_public: bool, 
                            is_active: bool) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
             environment = r.db(self.database_name).table(self.table_name).get(env_id).update({
                                                                     "name": name,
                                                                     "address": address,
@@ -145,8 +105,8 @@ class EnvironmentDatasourceImpl(IEnvironmentDatasource):
                                                                     "is_active": is_active
                                                                 }).run(g.rdb_conn)
             if environment['replaced'] == 0:
-                return jsonify({'code':400, 'message':'The id is invalid. This can happen if the item represented by the id has been deleted.'})
+                return NotFoundResponseCode(message="Environment ID not found.")
             else:    
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)

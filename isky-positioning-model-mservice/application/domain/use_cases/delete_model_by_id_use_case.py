@@ -7,4 +7,4 @@ class DeleteModelByIdUseCase:
         self.model_repository = model_repository
         
     def execute(self, model_id: str)->dict:
-        return self.model_repository.get_model_by_id(model_id=model_id)
+        return self.model_repository.delete_model_by_id(model_id=model_id)

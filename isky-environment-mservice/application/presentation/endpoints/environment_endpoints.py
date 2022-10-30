@@ -28,8 +28,9 @@ r = RethinkDB()
 @api_environment.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
         abort(503, "No database g.rdb_connection could be established.")
 
@@ -41,7 +42,7 @@ def teardown_request(exception):
         pass
 
 @api_environment.post('/environment', tags=[environment_tag])
-# @login_required
+@login_required
 def insert_environment(body: EnvironmentEntity):
         insert_environment_use_case = CreateEnvironmentUseCase(environment_repository=ApplicationContainer.environment_repository())
         data = {
@@ -52,32 +53,32 @@ def insert_environment(body: EnvironmentEntity):
                 "is_active": body.is_active}
         return insert_environment_use_case.execute(data)
 
-@api_environment.get('/environment', tags=[environment_tag])
-# @login_required
+@api_environment.get('/environment/all', tags=[environment_tag])
+@login_required
 def get_environments():
         get_environments_use_case = GetEnvironmentsUseCase(environment_repository=ApplicationContainer.environment_repository())
         return get_environments_use_case.execute()
 
 @api_environment.get('/environment/<env_id>', tags=[environment_tag])
-# @login_required
+@login_required
 def get_environment_by_id(path: EnvironmentId):
         get_environment_use_case = GetEnvironmentByIdUseCase(environment_repository=ApplicationContainer.environment_repository())
         return get_environment_use_case.execute(env_id=path.env_id)
 
 @api_environment.get('/environment/<name>/name', tags=[environment_tag])
-# @login_required
+@login_required
 def get_environment_by_name(path: EnvironmentName):
         get_environment_use_case = GetEnvironmentByNameUseCase(environment_repository=ApplicationContainer.environment_repository())
         return get_environment_use_case.execute(name=path.name)
 
 @api_environment.delete('/environment/<env_id>/delete', tags=[environment_tag])
-# @login_required
+@login_required
 def delete_environment_by_id(path: EnvironmentId):
         delete_environment_use_case = DeleteEnvironmentUseCase(environment_repository=ApplicationContainer.environment_repository())
         return delete_environment_use_case.execute(env_id=path.env_id)
 
 @api_environment.put('/environment/<env_id>/update', tags=[environment_tag])
-# @login_required
+@login_required
 def update_environment(path:EnvironmentId, body:EnvironmentEntity):
         update_environment_use_case = UpdateEnvironmentUseCase(environment_repository=ApplicationContainer.environment_repository())
         return update_environment_use_case.execute( env_id=path.env_id, name=body.name, address=body.address,

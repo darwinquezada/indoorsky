@@ -1,8 +1,10 @@
 # Dockerfile
 FROM python:3.9
-COPY requirements.txt /userapp/requirements.txt
-WORKDIR /userapp
+COPY requirements.txt /envapp/requirements.txt
+WORKDIR /envapp
 RUN pip install -r requirements.txt
-COPY . /userapp
-ENTRYPOINT ["python"]
-CMD ["run.py"]
+COPY . /envapp
+RUN chmod +x boot.sh
+ENV FLASK_APP run.py
+EXPOSE 5000
+ENTRYPOINT ["./boot.sh"]

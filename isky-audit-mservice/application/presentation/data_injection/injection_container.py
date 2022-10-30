@@ -14,11 +14,13 @@ if os.path.exists(dotenv_path):
    load_dotenv(dotenv_path)
    
 class ApplicationContainer(containers.DeclarativeContainer):
-    
-        
+    """
+    Container for data injection
+    """
+    # Inject data (database name and table) to the datasource
     audit_datasource = providers.Factory(AuditDatasourceImpl,
                                        database_name=os.environ['RDB_DB'],
                                        table_name=os.environ['RDB_TABLE'])
-    
+    # Inject data to the implementation of the audit repository
     audit_repository = providers.Factory(AuditRepositoryImpl,
                                          audit_datasource=audit_datasource())

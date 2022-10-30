@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class BleEntity(BaseModel):
-    id: str
+    device_id: str
     name: str
     rssi: int    
 

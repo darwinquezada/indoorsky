@@ -18,7 +18,7 @@ do
         "production")
             break
             ;;
-        "test")
+        "testing")
             break
             ;;
         "Quit")
@@ -30,10 +30,14 @@ done
 
 read -p "IndoorSky host [localhost]: " host
 host_system=${host:-localhost}
-read -p "RethinkDB host [localhost]: " host
-rethindb_host=${host:-localhost}
+read -p "RethinkDB host [localhost]: " hostrethinkdb
+rethindb_host=${hostrethinkdb:-localhost}
 read -p "RethinkDB port [28015]: " port
 rethindb_port=${port:-28015}
+read -p "RethinkDB user [admin]: " user
+rethindb_user=${user:-admin}
+read -p "RethinkDB password [none]: " password
+rethindb_password=${user:-""}
 read -p "Appwrite host [localhost]: " host
 appwrite_host=${host:-localhost}
 read -p "Appwrite port [80]: " port
@@ -42,8 +46,8 @@ read -p "Appwrite project ID [none]: " id
 appwrite_project_id=${id:-none}
 read -p "Appwrite endpoint [$appwrite_host:$appwrite_port/api/v1]: " endpoint
 appwrite_endpoint=${endpoint:-$appwrite_host:$appwrite_port/api/v1}
-read -p "Appwrite API key [none]: " id
-appwrite_api_key=${id}
+read -p "Appwrite API key [none]: " key
+appwrite_api_key=${key:-""}
 
 isky_dirs=( $(find ./ -type d -name "isky-*" 2>/dev/null) )
 
@@ -55,6 +59,8 @@ for dir in "${isky_dirs[@]}"; do
   sed -i -e "s|^AUTHENDPOINT=.*$|AUTHENDPOINT='$host_system'|g" .env
   sed -i -e "s|^RDB_HOST=.*$|RDB_HOST='$rethindb_host'|g" .env
   sed -i -e "s|^RDB_PORT=.*$|RDB_PORT='$rethindb_port'|g" .env
+  sed -i -e "s|^RDB_USER=.*$|RDB_USER='$rethindb_user'|g" .env
+  sed -i -e "s|^RDB_PASSWORD=.*$|RDB_PASSWORD='$rethindb_password'|g" .env
 
   sed -i -e "s|^APPWRITEENDPOINT=.*$|APPWRITEENDPOINT='$appwrite_endpoint'|g" .env
   sed -i -e "s|^APPWRITEPROJECTID=.*$|APPWRITEPROJECTID='$appwrite_project_id'|g" .env

@@ -3,7 +3,7 @@ import tensorflow as tf
 import random
 import numpy as np
 from numpy.random import seed, default_rng
-from miscellaneous.misc import Misc
+from misc import Misc
 '''
 #  ELM MODULE
 #================================================================================
@@ -57,9 +57,8 @@ def convlayer(input_data=None, cnn_config=None):
     ker = 1*(ker)/(cnn_config['kernel_size']) #scaling
     ker = K.variable(ker)
 
-    if cnn_config['type'] == 1:
-        out_ = K.conv1d(input_data, ker, strides=cnn_config['strides'], padding=cnn_config['padding'],
-                        data_format=cnn_config['data_format'])
+    out_ = K.conv1d(input_data, ker, strides=cnn_config['strides'], padding=cnn_config['padding'],
+                    data_format=cnn_config['data_format'])
 
     mp = pool1d(out_, 2, strides=2, padding='valid', data_format='channels_last', pool_mode='avg')
     nout__ = misc.activation_function(mp, cnn_config['act_funct'])  # useful nonlinearity   (instead of  RELU)

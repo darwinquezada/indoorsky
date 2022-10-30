@@ -1,35 +1,73 @@
-import code
 from .core_exception import BaseAPICode
 
 
-# Succesful code
-class SuccessCode(BaseAPICode):
+# Success code
+# 2XX response codes
+class SuccessResponseCode(BaseAPICode):
     code = 200
     message = "Success!"
      
-class CreateSuccessCode(BaseAPICode):
+class CreatedResponseCode(BaseAPICode):
+    message = "Successfully created."
     code = 201
-    message = "Succesfully created."
     
-class DeleteSuccessCode(BaseAPICode):
-    code = 201
-    message = "Succesfully removed."
+class AcceptedResponseCode(BaseAPICode):
+    code = 202
+    message = "Request accepted successfully."
     
-class UpdateSuccessCode(BaseAPICode):
-    code = 201
-    message = "Succesfully updated."
+class UpdateResponseCode(BaseAPICode):
+    code = 204
+    message = "Record updated successfully."
     
-
-# Error code
-class NoExistCode(BaseAPICode):
+class DeletedResponseCode(BaseAPICode):
+    code = 204
+    message = "Record removed successfully."
+    
+# 3XX response codes
+class MovedPermanentlyResponseCode(BaseAPICode):
+    code = 301
+    message = "Resource moved permanently."
+    
+class NotModifiedResponseCode(BaseAPICode):
+    code = 304
+    message = "Resource not modified."
+    
+# 4XX response codes
+class BadResponseCode(BaseAPICode):
+    code = 400
+    message = "Bad request."
+    
+class UnauthorizedResponseCode(BaseAPICode):
+    code = 401
+    message = "Unauthorized."
+    
+class ForbiddenResponseCode(BaseAPICode):
+    code = 403
+    message = "Forbidden."
+    
+class NotFoundResponseCode(BaseAPICode):
     code = 404
-    message = "Register does not exist."
+    message = "Not Found."
     
-class RecordExistCode(BaseAPICode):
-    code = 409
-    message = "Register already exists in the database."
+class MethodNotAllowedResponseCode(BaseAPICode):
+    code = 405
+    message = "Method not allowed."
 
-class ErrorCode(BaseAPICode):
+class ConflictResponseCode(BaseAPICode):
+    code = 409
+    message = "Conflict."
+
+# 5XX response codes
+class InternalServerErrorResponseCode(BaseAPICode):
+    code = 500
+    message = "Internal server error."
+    
+class NotImplementedResponseCode(BaseAPICode):
     code = 501
-    message = "An error has ocurred."
+    message = "Not implemented."
+    
+class ServiceUnavailableResponseCode(BaseAPICode):
+    code = 503
+    message = "The server is not ready to handle the request."
+    
     

@@ -51,13 +51,13 @@ def delete_user(path:Path):
 @login_required
 def update_user_name(path:Path, body:UserNameBody):
     update_user_name_use_case = UpdateUserNameUseCase(user_repository=ApplicationContainer.user_repository())
-    return update_user_name_use_case.execute(user_id=path.user_id,name=UserNameBody.name)
+    return update_user_name_use_case.execute(user_id=path.user_id,name=body.name)
 
 @api_user.put('/user/<user_id>/update/email', tags=[user_tag])
 @login_required
 def update_user_email(path:Path, body:UserEmailBody):
     update_user_email_use_case = UpdateUserEmailUseCase(user_repository=ApplicationContainer.user_repository())
-    return update_user_email_use_case.execute(user_id=path.user_id,email=UserEmailBody.email)
+    return update_user_email_use_case.execute(user_id=path.user_id,email=body.email)
 
 @api_user.put('/user/<user_id>/update/password', tags=[user_tag])
 @login_required

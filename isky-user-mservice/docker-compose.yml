@@ -6,8 +6,8 @@ volumes:
 
 networks:
   micro_network:
-    external:
-      name: micro_network
+    name: kong-isky-net
+    external: true
 
 services:
   auth-api:
@@ -15,7 +15,7 @@ services:
     build:
       context: .
     ports:
-    - "5001:5000"
+    - "5002:5000"
     networks:
       - micro_network
     restart: always

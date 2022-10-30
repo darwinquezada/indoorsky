@@ -5,7 +5,7 @@ from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 
 from . import fingerprint_tag, api_fingerprint
-# from application.core.decorators.jwt_manager import login_required
+from application.core.decorators.jwt_manager import login_required
 from application.domain.entity.fingerprint_entity import FingerprintEntity
 from application.presentation.data_injection.injection_container import ApplicationContainer
 
@@ -31,10 +31,11 @@ r = RethinkDB()
 @api_fingerprint.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
-        abort(503, "No database g.rdb_connection could be established.")
+        abort(503, "No database connection could be established.")
 
 @api_fingerprint.teardown_request
 def teardown_request(exception):
@@ -44,7 +45,7 @@ def teardown_request(exception):
         pass
 
 @api_fingerprint.post('/fingerprint', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def insert_fingerprint(body: FingerprintEntity):
         insert_fingerprint_use_case = InsertFingerprintUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         data = {
@@ -60,61 +61,61 @@ def insert_fingerprint(body: FingerprintEntity):
         return insert_fingerprint_use_case.execute(data)
 
 @api_fingerprint.get('/fingerprint/<fingerprint_id>', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def get_fingerprint_by_id(path: FingerprintIdBody):
         get_fingerprint_by_id_use_case = GetFingerprintByIdUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return get_fingerprint_by_id_use_case.execute(fp_id=path.fingerprint_id)
 
 @api_fingerprint.get('/fingerprint/<env_id>/environment', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def get_fingerprint_by_env(path: FingerprintEnvBody):
         get_fingerprint_by_field_use_case = GetFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return get_fingerprint_by_field_use_case.execute(field='env_id', value=path.env_id)
 
 @api_fingerprint.get('/fingerprint/<building_id>/building', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def get_fingerprint_by_building(path: FingerprintBuildingBody):
         get_fingerprint_by_field_use_case = GetFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return get_fingerprint_by_field_use_case.execute(field='building_id', value=path.building_id)
 
 @api_fingerprint.get('/fingerprint/<floor_id>/floor', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def get_fingerprint_by_floor(path: FingerprintFloorBody):
         get_fingerprint_by_field_use_case = GetFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return get_fingerprint_by_field_use_case.execute(field='floor_id', value=path.floor_id)
 
 @api_fingerprint.get('/fingerprint/<poi_id>/poi', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def get_fingerprint_by_poi(path: FingerprintPoiBody):
         get_fingerprint_by_field_use_case = GetFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return get_fingerprint_by_field_use_case.execute(field='poi_id', value=path.poi_id)
 
 @api_fingerprint.delete('/fingerprint/<fingerprint_id>/delete', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def delete_fingerprint_by_id(path: FingerprintIdBody):
         delete_fingerprint_by_id_use_case = DeleteFingerprintByIdUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return delete_fingerprint_by_id_use_case.execute(fp_id=path.fingerprint_id)
 
 @api_fingerprint.delete('/fingerprint/<env_id>/environment/delete', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def delete_fingerprint_by_env(path: FingerprintEnvBody):
         delete_fingerprint_by_field_use_case = DeleteFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return delete_fingerprint_by_field_use_case.execute(field='env_id', value=path.env_id)
 
 @api_fingerprint.delete('/fingerprint/<building_id>/building/delete', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def delete_fingerprint_by_building(path: FingerprintBuildingBody):
         delete_fingerprint_by_field_use_case = DeleteFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return delete_fingerprint_by_field_use_case.execute(field='building_id', value=path.building_id)
 
 @api_fingerprint.delete('/fingerprint/<floor_id>/floor/delete', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def delete_fingerprint_by_floor(path: FingerprintFloorBody):
         delete_fingerprint_by_field_use_case = DeleteFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return delete_fingerprint_by_field_use_case.execute(field='floor_id', value=path.floor_id)
 
 @api_fingerprint.delete('/fingerprint/<poi_id>/poi/delete', tags=[fingerprint_tag])
-# @login_required
+@login_required
 def delete_fingerprint_by_poi(path: FingerprintPoiBody):
         delete_fingerprint_by_field_use_case = DeleteFingerprintByFieldUseCase(fingerprint_repository=ApplicationContainer.fingerprint_repository())
         return delete_fingerprint_by_field_use_case.execute(field='poi_id', value=path.poi_id)

@@ -4,6 +4,8 @@ from flask_openapi3 import Info
 from flask_openapi3 import OpenAPI
 from pydantic import BaseModel, Field
 
+from application.core.exceptions.status_codes import (MethodNotAllowedResponseCode,NotFoundResponseCode)
+
 from flask_openapi3.models.security import HTTPBearer, OAuth2, OAuthFlows, OAuthFlowImplicit
 
 jwt = HTTPBearer(bearerFormat="JWT")
@@ -19,14 +21,13 @@ security_schemes = {"jwt": jwt}
 security = [{"jwt": []}]
 
 class NotFoundResponse(BaseModel):
-    code: int = Field(-1, description="Status Code")
-    message: str = Field("Resource not found!", description="Exception Information")
+    NotFoundResponseCode()
 
 class Unauthorized(BaseModel):
     code: int = Field(-1, description="Status Code")
-    message: str = Field("Unauthorized!", description="Exception Information")
+    message: str = Field("Unauthorized!", description="Exception Information.")
 
 url_prefix = '/api/v1'
 
 info = Info(title='Indoor Positioning API', version='1.0.0')
-app = OpenAPI(__name__, info=info, security_schemes=security_schemes, responses={"404": NotFoundResponse})
+app = OpenAPI(__name__, info=info, security_schemes=security_schemes)

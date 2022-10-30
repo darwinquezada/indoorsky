@@ -15,34 +15,38 @@ from application.domain.use_cases.get_model_by_name_use_case import GetModelByNa
 from application.domain.use_cases.delete_model_by_id_use_case import DeleteModelByIdUseCase
 
 
-@api_model.post('/model/train/cnn_lstm', tags=[model_tag])
-#@login_required
+@api_model.post('/model/cnn_lstm/train', tags=[model_tag])
+# @login_required
 def training_model_cnn_lstm(body:CnnLstmEntity):
     floor = {
         'lr':  body.floor.lr,
         'epochs': body.floor.epochs,
         'batch_size': body.floor.batch_size,
         'loss': body.floor.loss,
-        'optimizer': body.floor.optimizer 
+        'optimizer': body.floor.optimizer,
+        'train': body.floor.train
         }
     building = {
         'lr':  body.building.lr,
         'epochs': body.building.epochs,
         'batch_size': body.building.batch_size,
         'loss': body.building.loss,
-        'optimizer': body.building.optimizer 
+        'optimizer': body.building.optimizer,
+        'train': body.building.train 
         }
     position = {
         'lr':  body.position.lr,
         'epochs': body.position.epochs,
         'batch_size': body.position.batch_size,
         'loss': body.position.loss,
-        'optimizer': body.position.optimizer 
+        'optimizer': body.position.optimizer,
+        'train': body.position.train 
         }
     
     test = {
-        'percent_test' : body.test.percent_test,
         'test_accuracy' : body.test.test_accuracy,
+        'percent_test' : body.test.percent_test,
+        'percent_validation': body.test.percent_validation
     }
     
     data = {
@@ -57,8 +61,8 @@ def training_model_cnn_lstm(body:CnnLstmEntity):
     training_model_use_case = TrainModelUseCase(model_repository=ApplicationContainer.model_repository())
     return training_model_use_case.execute(data=data, model='cnn_lstm')
 
-@api_model.post('/model/train/cnn_elm', tags=[model_tag])
-#@login_required
+@api_model.post('/model/cnn_elm/train', tags=[model_tag])
+# @login_required
 def training_model_cnn_elm(body: CnnElmEntity):
     cnn = {
         'padding': body.cnn.padding.value,
@@ -95,3 +99,21 @@ def training_model_cnn_elm(body: CnnElmEntity):
     
     training_model_use_case = TrainModelUseCase(model_repository=ApplicationContainer.model_repository())
     return training_model_use_case.execute(data=data, model='cnn_elm')
+
+@api_model.get('/model/<model_id>', tags=[model_tag])
+# @login_required
+def get_model_by_id(path: ModelIdBody):
+    get_model_by_id_use_case = GetModelByIdUseCase(model_repository=ApplicationContainer.model_repository())
+    return get_model_by_id_use_case.execute(model_id=path.model_id)
+
+@api_model.get('/model/<name>/name', tags=[model_tag])
+# @login_required
+def get_model_by_name(path: ModelNameBody):
+    get_model_by_name_use_case = GetModelByNameUseCase(model_repository=ApplicationContainer.model_repository())
+    return get_model_by_name_use_case.execute(name=path.name)
+
+@api_model.delete('/model/<model_id>/delete', tags=[model_tag])
+# @login_required
+def delete_model_by_id(path: ModelIdBody):
+    delete_model_by_id_use_case = DeleteModelByIdUseCase(model_repository=ApplicationContainer.model_repository())
+    return delete_model_by_id_use_case.execute(model_id=path.model_id)

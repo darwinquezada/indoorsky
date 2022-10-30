@@ -1,3 +1,4 @@
+from ast import Not
 import json
 import os
 from pydoc import cli
@@ -6,8 +7,12 @@ from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 from application.data.datasource.poi_datasource import IPoiDatasource
 from flask import jsonify, abort, g
-from application.core.exceptions.status_codes import CreateSuccessCode, DeleteSuccessCode
+from application.core.exceptions.status_codes import (SuccessResponseCode, 
+                                                      NotFoundResponseCode, 
+                                                      InternalServerErrorResponseCode, 
+                                                      ConflictResponseCode)
 from datetime import datetime
+import time
 
 r = RethinkDB()
 
@@ -16,41 +21,8 @@ class PoiDatasourceImpl(IPoiDatasource):
         self.database_name = database_name
         self.table_name = table_name
 
-    def verify_db(self) -> dict:
-        try:
-            list_databases = r.db_list().run(g.rdb_conn)
-
-            if not self.database_name in list_databases:
-                r.db_create(self.database_name).run(g.rdb_conn)
-                r.db(self.database_name).table_create(self.table_name).run(g.rdb_conn)
-
-                pass
-        except RqlRuntimeError as e:
-            return jsonify({'code': '0', 'message': e.message})
-
-    def verify_table(self) -> dict:
-        try:
-            list_tables = r.db(self.database_name).table_list().run(g.rdb_conn)
-            if not self.table_name in list_tables:
-                r.db(self.database_name).table_create(self.table_name).run(g.rdb_conn)
-
-            list_indexes = r.db(self.database_name).table(self.table_name).index_list().run(g.rdb_conn)
-
-            if not list_indexes :
-                r.db(self.database_name).table(self.table_name).index_create("name").run(g.rdb_conn)
-                r.db(self.database_name).table(self.table_name).index_create("floor_id").run(g.rdb_conn)
-                r.db(self.database_name).table(self.table_name).index_wait("name").run(g.rdb_conn)
-                r.db(self.database_name).table(self.table_name).index_wait("floor_id").run(g.rdb_conn)
-                pass
-
-        except RqlRuntimeError as e:
-            return jsonify({'code': '0', 'message': e.message})
-
     def insert_poi(self, data: json) -> dict:
         try:
-            self.verify_db()
-            self.verify_table()
-
             millisecond = datetime.now()
             created = time.mktime(millisecond.timetuple()) * 1000
 
@@ -72,52 +44,52 @@ class PoiDatasourceImpl(IPoiDatasource):
             if reg_exist == True:
                 insert = r.db(self.database_name).table(self.table_name).insert(data).run(g.rdb_conn)
 
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
             else:
-                return jsonify({'code':409, 'message':'Oops ... you\'re trying to create an already existing record.'})
+                return ConflictResponseCode(message="There is a record with the same parameters.")
 
-        except RuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+        except RqlRuntimeError as e:
+            return InternalServerErrorResponseCode(message=e.message)
 
     def get_poi_by_id(self, poi_id: str) -> dict:
         try:
             poi = r.db(self.database_name).table(self.table_name).get(poi_id).to_json().run(g.rdb_conn)
 
-            if poi==None:
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+            if poi==None or poi=="null":
+                return NotFoundResponseCode(message="POI ID not found.")
 
             return json.loads(poi)
-        except RuntimeError as e:
-            return jsonify({'code':501, 'message':e})
+        except RqlRuntimeError as e:
+            return InternalServerErrorResponseCode(message=e.message)
 
     def get_poi_by_name(self, name: str) -> dict:
         try:
             pois = r.db(self.database_name).table(self.table_name).filter({"name": name}).run(g.rdb_conn)
 
-            if pois==None:
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+            if pois==None or pois=="null":
+                return NotFoundResponseCode(message="Name not found.")
 
             list_pois = []
             for poi in pois:
                 list_pois.append(poi)
 
             if not list_pois:
-                return jsonify({'code':204, 'message':'Oops ... No content'})
+                return NotFoundResponseCode()
 
             return jsonify(list_pois)
-        except RuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+        except RqlRuntimeError as e:
+            return InternalServerErrorResponseCode(message=e.message)
 
     def delete_poi(self, poi_id: str) -> dict:
         try:
             poi = r.db(self.database_name).table(self.table_name).get(poi_id).delete().run(g.rdb_conn)
 
             if poi['deleted'] == 0:
-                return jsonify({'code':400, 'message':'The id is invalid. This can happen if the item represented by the id has been deleted.'})
+                return NotFoundResponseCode(message="POI ID not found.")
             else:
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)
 
     def update_poi_by_id(self, poi_id: str, floor_id: str, name: str, description: str, image: str,
                          latitude: float, longitude: float, altitude: float, pos_x: float,
@@ -139,8 +111,8 @@ class PoiDatasourceImpl(IPoiDatasource):
                                                                 }).run(g.rdb_conn)
 
             if poi['replaced'] == 0:
-                return jsonify({'code':400, 'message':'The id is invalid. This can happen if the item represented by the id has been deleted.'})
+                return NotFoundResponseCode(message="POI ID not found.")
             else:
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
         except RqlRuntimeError as e:
-            return jsonify({'code':501, 'message':e.args})
+            return InternalServerErrorResponseCode(message=e.message)

@@ -14,10 +14,6 @@ if os.path.exists(dotenv_path):
 config_name = os.environ['CONFIGURATION_SETUP']
 
 app = create_app(config_name)
-context = (os.path.join(os.getcwd(),'certs','cert.pem'),
-           os.path.join(os.getcwd(),'certs','privkey.pem'))
-
-context = ('/etc/letsencrypt/live/insky.cloud/cert.pem', '/etc/letsencrypt/live/insky.cloud/privkey.pem')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5010, ssl_context=context, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=5000)

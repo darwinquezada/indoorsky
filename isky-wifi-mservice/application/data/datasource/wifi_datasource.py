@@ -4,14 +4,6 @@ import json
 class IWifiDatasource(ABC):
     
     @abstractmethod
-    def verify_db(self) -> dict:
-        pass
-    
-    @abstractmethod
-    def verify_table(self) -> dict:
-        pass
-    
-    @abstractmethod
     def insert_wifi(self, data: json) -> dict:
         pass
     

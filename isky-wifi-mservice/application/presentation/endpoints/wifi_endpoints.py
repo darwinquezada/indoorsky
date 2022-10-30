@@ -1,6 +1,7 @@
 import os
 from pydoc import cli
 from dotenv import load_dotenv
+from application.core.decorators.jwt_manager import login_required
 from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 
@@ -27,8 +28,9 @@ r = RethinkDB()
 @api_wifi.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
         abort(503, "No database g.rdb_connection could be established.")
 
@@ -40,7 +42,7 @@ def teardown_request(exception):
         pass
 
 @api_wifi.post('/wifi', tags=[wifi_tag])
-# @login_required
+@login_required
 def insert_wifi(body: WifiEntity):
         insert_wifi_use_case = InsertWifiUseCase(wifi_repository=ApplicationContainer.wifi_repository())
         data = {
@@ -52,25 +54,25 @@ def insert_wifi(body: WifiEntity):
         return insert_wifi_use_case.execute(data)
 
 @api_wifi.get('/wifi/<wifi_id>', tags=[wifi_tag])
-# @login_required
+@login_required
 def get_wifi_by_id(path: WifiIdBody):
         get_wifi_by_id_use_case = GetWifiByIdUseCase(wifi_repository=ApplicationContainer.wifi_repository())
         return get_wifi_by_id_use_case.execute(wifi_id=path.wifi_id)
 
 @api_wifi.get('/wifi/<fingerprint_id>/fingerprint', tags=[wifi_tag])
-# @login_required
+@login_required
 def get_wifi_by_fingerprint_id(path: WifiFingerprintIdBody):
         get_wifi_by_fingerprint_id_use_case = GetWifiByFingerprintIdUseCase(wifi_repository=ApplicationContainer.wifi_repository())
         return get_wifi_by_fingerprint_id_use_case.execute(fingerprint_id=path.fingerprint_id)
 
 @api_wifi.delete('/wifi/<wifi_id>/delete', tags=[wifi_tag])
-# @login_required
+@login_required
 def delete_wifi_by_id(path: WifiIdBody):
         delete_wifi_by_id_use_case = DeleteWifiByIdUseCase(wifi_repository=ApplicationContainer.wifi_repository())
         return delete_wifi_by_id_use_case.execute(wifi_id=path.wifi_id)
 
 @api_wifi.delete('/wifi/fingerprint/<fingerprint_id>/delete', tags=[wifi_tag])
-# @login_required
+@login_required
 def delete_wifi_by_fingerprint_id(path:WifiFingerprintIdBody):
         delete_wifi_by_fingerprint = DeleteWifiByFingerprintIdUseCase(wifi_repository=ApplicationContainer.wifi_repository())
         return delete_wifi_by_fingerprint.execute(fingerprint_id=path.fingerprint_id)

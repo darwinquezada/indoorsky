@@ -1,6 +1,5 @@
 import json
 import os
-from subprocess import PIPE, Popen, STDOUT
 
 from appwrite.client import Client
 from appwrite.services.users import Users
@@ -12,6 +11,9 @@ from appwrite.query import Query
 from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 from application.data.datasource.preprocessing_datasource import IPreprocessingDatasource
+from application.core.exceptions.status_codes import (SuccessResponseCode, InternalServerErrorResponseCode, 
+                                                      ConflictResponseCode, NotFoundResponseCode,
+                                                      CreatedResponseCode)
 from flask import jsonify, g
 from datetime import datetime
 import time
@@ -36,7 +38,7 @@ class PreprocessingDatasourceImpl(IPreprocessingDatasource):
                 r.db(self.database_name).table_create(self.table_name).run(g.rdb_conn)
                 pass
         except RqlRuntimeError as e:
-            return jsonify({'code': '0', 'message': e.message})
+            return InternalServerErrorResponseCode(message=e.message)
         
     def get_data_preprocessed_by_id(self, conf_prepro_id: str) -> dict:
         try:
@@ -50,9 +52,9 @@ class PreprocessingDatasourceImpl(IPreprocessingDatasource):
                 
                 return jsonify(data)
                 
-            return jsonify({'code':404, 'message': 'File not found.'})
+            return NotFoundResponseCode(message="Data preprocessing ID not found.")
         except AppwriteException as e:
-            return jsonify({'code':501, 'message': e.message})
+            return InternalServerErrorResponseCode(message=e.message)
     
     def preprocess_data(self, data: json) -> dict:
         try:
@@ -79,21 +81,25 @@ class PreprocessingDatasourceImpl(IPreprocessingDatasource):
             })
             
             databases = Databases(self.client)
+            
+            documents_preprocess = databases.list_documents(self.database_name, self.table_config,
+                                              queries=[Query.equal('value', data['name'])])
+   
             documents = databases.list_documents(self.database_name, self.table_dataset,
                                               queries=[Query.equal('name', data['name'])])
 
-            if documents['total'] == 0:
+            if documents['total'] == 0 and documents_preprocess['total'] == 0:
                 process_file = os.path.join(os.getcwd(),'application', 'data_preprocessing')
                 
                 os.system('python ' + process_file + '/preprocessing.py'
                         ' --params ' + "'" + str(insert_data) + "' &")
             
-                return jsonify({'code':200, 'message': 'Processing...'})
+                return CreatedResponseCode(message="Processing...")
             
-            return jsonify({'code':409, 'message': 'This register already exists.'})
+            return ConflictResponseCode(message="There is a register with the same name.")
             
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)
     
     
     def delete_data_preprocessed_by_id(self, conf_prepro_id: str) -> dict:
@@ -134,12 +140,12 @@ class PreprocessingDatasourceImpl(IPreprocessingDatasource):
                 for file in list_files_config:
                     result = storage.delete_file(self.table_data, file)
                     
-                return jsonify({'code':200, 'message': 'Sucess!'})
+                return SuccessResponseCode()
             
-            return jsonify({'code':204, 'message': 'No content.'})
+            return NotFoundResponseCode(message="Data preprocessing ID not found.")
             
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)
         
     def get_data_preprocessed_by_env(self, env_id: str) -> dict:
         try:
@@ -164,6 +170,6 @@ class PreprocessingDatasourceImpl(IPreprocessingDatasource):
                     list_documents.append(data)
             
                 return jsonify(list_documents)
-            return jsonify({'code':204, 'message':'No content.'})
+            return NotFoundResponseCode(message="Environment ID not found.")
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)

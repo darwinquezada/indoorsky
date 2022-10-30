@@ -1,6 +1,7 @@
 import os
 from pydoc import cli
 from dotenv import load_dotenv
+from application.core.decorators.jwt_manager import login_required
 from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
 
@@ -27,8 +28,9 @@ r = RethinkDB()
 @api_ble.before_request
 def before_request():
     try:
-        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], 
-                           port=os.environ['RDB_PORT'])
+        g.rdb_conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'], 
+                               user=os.environ['RDB_USER'],
+                               password=os.environ['RDB_PASSWORD'])
     except RqlDriverError:
         abort(503, "No database g.rdb_connection could be established.")
 
@@ -40,7 +42,7 @@ def teardown_request(exception):
         pass
 
 @api_ble.post('/ble', tags=[ble_tag])
-# @login_required
+@login_required
 def insert_ble(body: BleEntity):
         insert_ble_use_case = InsertbleUseCase(ble_repository=ApplicationContainer.ble_repository())
         data = {
@@ -52,25 +54,25 @@ def insert_ble(body: BleEntity):
         return insert_ble_use_case.execute(data)
 
 @api_ble.get('/ble/<ble_id>', tags=[ble_tag])
-# @login_required
+@login_required
 def get_ble_by_id(path: BleIdBody):
         get_ble_by_id_use_case = GetBleByIdUseCase(ble_repository=ApplicationContainer.ble_repository())
         return get_ble_by_id_use_case.execute(ble_id=path.ble_id)
 
 @api_ble.get('/ble/<fingerprint_id>/fingerprint', tags=[ble_tag])
-# @login_required
+@login_required
 def get_ble_by_fingerprint_id(path: BleFingerprintIdBody):
         get_ble_by_fingerprint_id_use_case = GetBleByFingerprintIdUseCase(ble_repository=ApplicationContainer.ble_repository())
         return get_ble_by_fingerprint_id_use_case.execute(fingerprint_id=path.fingerprint_id)
 
 @api_ble.delete('/ble/<ble_id>/delete', tags=[ble_tag])
-# @login_required
+@login_required
 def delete_ble_by_id(path: BleIdBody):
         delete_ble_by_id_use_case = DeleteBleByIdUseCase(ble_repository=ApplicationContainer.ble_repository())
         return delete_ble_by_id_use_case.execute(ble_id=path.ble_id)
 
 @api_ble.delete('/ble/fingerprint/<fingerprint_id>/delete', tags=[ble_tag])
-# @login_required
+@login_required
 def delete_ble_by_fingerprint_id(path:BleFingerprintIdBody):
         delete_ble_by_fingerprint = DeleteBleByFingerprintIdUseCase(ble_repository=ApplicationContainer.ble_repository())
         return delete_ble_by_fingerprint.execute(fingerprint_id=path.fingerprint_id)

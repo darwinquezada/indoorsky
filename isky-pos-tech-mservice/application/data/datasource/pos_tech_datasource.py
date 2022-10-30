@@ -2,15 +2,7 @@ from abc import ABC, abstractmethod
 import json
 
 class IPosTechDatasource(ABC):
-    
-    @abstractmethod
-    def verify_db(self) -> dict:
-        pass
-    
-    @abstractmethod
-    def verify_table(self) -> dict:
-        pass
-    
+
     @abstractmethod
     def insert_pos_tech(self, data: json)->dict:
         pass

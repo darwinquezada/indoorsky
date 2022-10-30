@@ -43,7 +43,9 @@ dataset_id = os.environ["TABLE_DATASET"]
 def connection():
     # Database connection RethinkDB
     try:
-        conn = r.connect(host=os.environ["RDB_HOST"],  port=os.environ["RDB_PORT"])
+        conn = r.connect(host=os.environ['RDB_HOST'], port=os.environ['RDB_PORT'],
+                        user=os.environ['RDB_USER'],
+                        password=os.environ['RDB_PASSWORD'])
         return conn
     except RqlRuntimeError as e:
         return jsonify({"code": "0", "message": e.message})
@@ -52,49 +54,49 @@ def verify_rethinkdb():
     try:
         conn = connection()
         list_databases = r.db_list().run(conn)
-            
+
         if not database_id in list_databases:
             r.db_create(database_id).run(conn)
             pass
     except RqlRuntimeError as e:
         return jsonify({"code": "0", "message": e.message})
- 
+
 def is_database_available():
     try:
         global database_id
-        databases = Databases(client=client)
-        response = databases.list()
+        databases_conn = Databases(client=client)
+        response = databases_conn.list()
         list_databases = []
         for database in response["databases"]:
             list_databases.append(database["$id"])
-        
+
         if os.environ["RDB_DB"] in list_databases:
             return True
         return False
     except AppwriteException as e:
         print({"code":501, "message":e.message})
- 
+
 def create_appwrite_db():
     try:
         global database_id
-        databases = Databases(client)
-        response = databases.create(database_id, os.environ["RDB_DB"])
+        databases_conn = Databases(client)
+        response = databases_conn.create(database_id, os.environ["RDB_DB"])
         database_id = response["$id"]
     except AppwriteException as e:
         print({"code":501, "message":e.message})
 
 
 def create_collection_data_preprocesing():
-    try: 
+    try:
         global database_id, config_preproc_id
-        databases = Databases(client)
-        
-        response = databases.create_collection(database_id=database_id,
+        databases_conn = Databases(client)
+
+        response = databases_conn.create_collection(database_id=database_id,
                                                collection_id=config_preproc_id,
                                                name=config_preproc_id)
-        
+
         # ID
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="id_preprocessing",
@@ -102,7 +104,7 @@ def create_collection_data_preprocesing():
             required=True,
         )
         # Parameter
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="parameter",
@@ -110,37 +112,39 @@ def create_collection_data_preprocesing():
             required=True,
         )
         # Value
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="value",
             size=40,
             required=False,
         )
-        response = databases.create_index(
-            database_id=database_id,
-            collection_id=config_preproc_id,
-            key="id_preprocessing",
-            type="fulltext",
-            attributes=["id_preprocessing"]
-        )
         # Type
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="type",
             size=40,
             required=False,
         )
+        # Create indexes
         sleep(2)
-        response = databases.create_index(
+        response = databases_conn.create_index(
+            database_id=database_id,
+            collection_id=config_preproc_id,
+            key="id_preprocessing",
+            type="fulltext",
+            attributes=["id_preprocessing"]
+        )
+
+        response = databases_conn.create_index(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="value",
             type="fulltext",
             attributes=["value"]
         )
-        response = databases.create_index(
+        response = databases_conn.create_index(
             database_id=database_id,
             collection_id=config_preproc_id,
             key="parameter",
@@ -151,16 +155,16 @@ def create_collection_data_preprocesing():
         print({"code": "0", "message": e.response})
 
 def create_collection_dataset():
-    try: 
+    try:
         global database_id, dataset_id
-        databases = Databases(client)
-        
-        response = databases.create_collection(database_id=database_id,
+        databases_conn = Databases(client)
+
+        response = databases_conn.create_collection(database_id=database_id,
                                                collection_id=dataset_id,
                                                name=dataset_id)
-        
+
         # Name
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=dataset_id,
             key="name",
@@ -168,7 +172,7 @@ def create_collection_dataset():
             required=True,
         )
         # technique
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=dataset_id,
             key="technique",
@@ -176,7 +180,7 @@ def create_collection_dataset():
             required=True,
         )
         # Type
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=dataset_id,
             key="type",
@@ -184,7 +188,7 @@ def create_collection_dataset():
             required=False,
         )
         # Process_ID
-        response = databases.create_string_attribute(
+        response = databases_conn.create_string_attribute(
             database_id=database_id,
             collection_id=dataset_id,
             key="process_id",
@@ -193,21 +197,14 @@ def create_collection_dataset():
         )
         # Index
         sleep(2)
-        response = databases.create_index(
-            database_id=database_id,
-            collection_id=dataset_id,
-            key="name_technique_idx",
-            type="fulltext",
-            attributes=["name", "technique"]
-        )
-        response = databases.create_index(
+        response = databases_conn.create_index(
             database_id=database_id,
             collection_id=dataset_id,
             key="name",
             type="fulltext",
             attributes=["name"]
         )
-        response = databases.create_index(
+        response = databases_conn.create_index(
             database_id=database_id,
             collection_id=dataset_id,
             key="process_id",
@@ -217,22 +214,22 @@ def create_collection_dataset():
     except AppwriteException as e:
         print({"code": "0", "message": e.response})
 
-def is_collection_available(collection_name: str) -> bool:
+def is_collection_available(collection_name: str):
     try:
         global database_id
-        databases = Databases(client)
-        collections = databases.list_collections(database_id)
+        databases_conn = Databases(client)
+        collections = databases_conn.list_collections(database_id)
         list_collections = []
         for collection in collections["collections"]:
             list_collections.append(collection["$id"])
-            
+
         if collection_name in list_collections:
             return True
         return False
     except AppwriteException as e:
         print({"code": "0", "message": e.message})
-    
-    
+
+
 def is_bucket_available():
     try:
         global bucket_preproc_id
@@ -240,17 +237,17 @@ def is_bucket_available():
         buckets = storage.list_buckets()
 
         list_buckets = []
-        
+
         for bucket in buckets["buckets"]:
             list_buckets.append(bucket["$id"])
-            
+
         if bucket_preproc_id in list_buckets:
             return True
         return False
-    
+
     except AppwriteException as e:
         print({"code": "0", "message": e.message})
-        
+
 def create_bucket():
     try:
         global bucket_preproc_id
@@ -259,39 +256,37 @@ def create_bucket():
     except AppwriteException as e:
         print({"code": "0", "message": e.message})
 
-   
+
 if __name__ == "__main__":
     # Instances
-    databases = Databases(client)
-    storage = Storage(client)
-    
+    # databases = Databases(client)
+    # storage = Storage(client)
+
     # Create a temporal directory to store files
     temp_path = os.path.join(os.getcwd(), "application", "temp")
-    
+
     if not os.path.exists(temp_path):
         os.makedirs(temp_path)
-    
+
     # Verify RethinkDB dataset
     verify_rethinkdb()
-    
+
     # Verify if the database exist
     is_db_available = is_database_available()
     if not is_db_available:
         create_appwrite_db()
-    
+
     # Verify if the collection exist
     collection_available = is_collection_available(config_preproc_id)
     if not collection_available:
         create_collection_data_preprocesing()
-        
+
     # Verify is the dataset exist
     collection_dataset = is_collection_available(dataset_id)
     if not collection_dataset:
         create_collection_dataset()
-        
+
     # Verify if the bucket exist
     bucket_available = is_bucket_available()
     if not bucket_available:
         create_bucket()
-        
-    

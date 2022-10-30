@@ -4,6 +4,11 @@ from appwrite.services.storage import Storage
 from appwrite.exception import AppwriteException
 from appwrite.query import Query
 from application.data.datasource.cleansing_datasource import IDataCleansingDatasource
+from application.core.exceptions.status_codes import (SuccessResponseCode, 
+                                                      NotFoundResponseCode, 
+                                                      ConflictResponseCode,
+                                                      AcceptedResponseCode,
+                                                      InternalServerErrorResponseCode)
 from flask import jsonify
 from datetime import datetime
 import time
@@ -47,13 +52,13 @@ class DataCleansingDatasourceImpl(IDataCleansingDatasource):
                     process_file = os.path.join(os.getcwd(),'application', 'algorithm')
                     os.system('python ' + process_file + '/process.py'
                                 ' --params ' + "'" + str(data_completed) + "' &")
-                    return jsonify({'code':200, 'message':'Processing...'})
+                    return AcceptedResponseCode(message="Processing....")
                 else:
-                    return jsonify({'code':204, 'message':'Dataset ID is not valid.'})
+                    return NotFoundResponseCode(message="Dataset ID not found.")
             
-            return jsonify({'code':409, 'message': 'This register already exists.'})
+            return ConflictResponseCode(message="There is a register with the same parameters.")
         except AppwriteException as e:
-                return jsonify({'code':501, 'message':e.message})
+                return InternalServerErrorResponseCode(message=e.message)
         
     def get_cleansed_dataset_by_id(self, clean_id: str) -> dict:
         try:
@@ -83,9 +88,9 @@ class DataCleansingDatasourceImpl(IDataCleansingDatasource):
                 
                 return jsonify(list_parameters)
             else:
-                return jsonify({'code':404, 'message':'Data cleansed ID does not exist.'})
+                return NotFoundResponseCode(message="Data cleansing ID not found.")
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)
     
     def get_cleansed_dataset_by_env(self, env_id: str) -> dict:
         return super().get_cleansed_dataset_by_env(env_id)
@@ -115,11 +120,11 @@ class DataCleansingDatasourceImpl(IDataCleansingDatasource):
                 for dataset in documents_datasets['documents']:
                     databases.delete_document(self.database_name,  self.tables['dataset'], dataset['$id'])
                 
-                return jsonify({'code':200, 'message':'Success!'})
+                return SuccessResponseCode()
             
-            return jsonify({'code':404, 'message':'Data cleansed ID does not exist.'})
+            return NotFoundResponseCode(message="Data cleansing ID not found.")
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)
     
     def get_cleansed_dataset_by_name(self, name: str) -> dict:
         try:
@@ -150,6 +155,6 @@ class DataCleansingDatasourceImpl(IDataCleansingDatasource):
                 
                 return jsonify(list_parameters)
             else:
-                return jsonify({'code':404, 'message':'Data cleansed name does not exist.'})
+                return NotFoundResponseCode(message="Data cleansing name not found.")
         except AppwriteException as e:
-            return jsonify({'code':501, 'message':e.message})
+            return InternalServerErrorResponseCode(message=e.message)

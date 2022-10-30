@@ -32,7 +32,11 @@ def login_required(f):
         
         token = header_token.split(" ")
        
-        response = requests.request(method="GET", url=os.environ['AUTHENDPOINT']+token[1])
+        if len(token) > 1:
+            response = requests.request(method="GET", url=os.environ['AUTHENDPOINT']+token[1], verify=False)
+        else:
+            response = requests.request(method="GET", url=os.environ['AUTHENDPOINT']+token[0], verify=False)
+            
         auth_response = response.json()
         
         if 'code' in auth_response:
@@ -51,23 +55,22 @@ def login_required(f):
 @jwt_manager.expired_token_loader
 def expired_token_callback(jwt_headers, jwt_payload):
     """token Expired"""
-    print(jwt_headers and jwt_payload)
     return ExpiredTokenException()
 
 
 @jwt_manager.invalid_token_loader
 def invalid_token_callback(e):
     """Invalid token"""
-    print(e)
     return InvalidTokenException()
 
 
 @jwt_manager.unauthorized_loader
 def unauthorized_callback(e):
-    print(e)
+    """Unauthorized"""
     return AuthException()
 
 
 @jwt_manager.additional_claims_loader
 def add_claims_to_access_token(identity):
+    """Reques access token"""
     return identity

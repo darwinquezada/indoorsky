@@ -4,5 +4,7 @@ COPY requirements.txt /postech/requirements.txt
 WORKDIR /postech
 RUN pip install -r requirements.txt
 COPY . /postech
-ENTRYPOINT ["python"]
-CMD ["run.py"]
+RUN chmod +x boot.sh
+ENV FLASK_APP run.py
+EXPOSE 5000
+ENTRYPOINT ["./boot.sh"]
