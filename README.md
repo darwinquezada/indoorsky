@@ -90,7 +90,7 @@ This application has been developed using:
 
 For learning how to use insky.cloud, see its documentation: https://insky.cloud/
 
-| IndoorSky        | [![pub package](https://img.shields.io/badge/indoorSky-v1.0.0.0%20Beta-green)](https://insky.cloud/)|
+| IndoorSky        | [![pub package](https://img.shields.io/badge/indoorSky-v1.0.0%20Beta-green)](https://insky.cloud/)|
 | ---------------- | --------------------------------------------------------------------------------------------------- |
 
 # Environment Set up
