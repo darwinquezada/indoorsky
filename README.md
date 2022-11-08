@@ -87,6 +87,12 @@ This application has been developed using:
     ├── run.py                                      # Core file, run the microservice
     └── README.md                                   # Readme please
 
+
+For learning how to use insky.cloud, see its documentation: https://insky.cloud/
+
+| IndoorSky        | [![pub package](https://img.shields.io/badge/indoorSky-v1.0.0.0%20Beta-green)](https://insky.cloud/)|
+
+
 # Environment Set up
 
 Steps to setup the environment, and API gateway.
