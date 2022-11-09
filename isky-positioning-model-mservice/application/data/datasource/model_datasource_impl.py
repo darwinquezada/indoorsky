@@ -118,7 +118,6 @@ class ModelDatasourceImpl(IModelDatasource):
                                                                 queries=[Query.equal('id_model', 
                                                                                      documents['documents'][0]['id_model'])])
                 
-                
                 for data in list_model_params['documents']:
                     parameter = data['parameter'].split('.')
                     if len(parameter) > 1:
